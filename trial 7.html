@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Apartment Management System</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
+    h1, h2 { text-align: center; color: #007BFF; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; vertical-align: top; }
+    th { background: #007BFF; color: white; }
+    input { width: 65px; padding: 3px; font-size: 12px; }
+    button { padding: 6px 10px; margin: 3px; cursor: pointer; border: none; border-radius: 4px; }
+    .removeBtn { background: #dc3545; color: #fff; }
+    .addBtn { background: #28a745; color: #fff; }
+    .totalRow { background: #e9ecef; font-weight: bold; }
+    .monthBox { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+    .monthBox label { font-size: 10px; display: block; text-align: left; margin-bottom: 1px; color: #555; }
+    .monthBox div { text-align: left; }
+    small { display: block; margin-top: 4px; color: #333; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Apartment Management System (2026)</h1>
+
+  <!-- Add Tenant Form -->
+  <div style="margin-bottom:15px;">
+    <input type="text" id="newName" placeholder="Tenant Name">
+    <select id="newHouse">
+      <option value="Bedsitter">Bedsitter</option>
+      <option value="Studio">Studio</option>
+      <option value="1 Bedroom">1 Bedroom</option>
+      <option value="2 Bedroom">2 Bedroom</option>
+      <option value="3 Bedroom">3 Bedroom</option>
+    </select>
+    <select id="newNumber">
+      <option value="">House #</option>
+      <option>A1</option><option>A2</option><option>A3</option><option>A4</option>
+      <option>B1</option><option>B2</option><option>B3</option><option>B4</option>
+      <option>C1</option><option>C2</option><option>C3</option><option>C4</option>
+      <option>D1</option><option>D2</option><option>D3</option><option>D4</option>
+      <option>E1</option><option>E2</option><option>E3</option><option>E4</option>
+    </select>
+    <button class="addBtn" onclick="addTenant()">Add Tenant</button>
+  </div>
+
+  <!-- Main Detailed Table -->
+  <table id="tenantTable">
+    <thead>
+      <tr>
+        <th>Tenant</th>
+        <th>House Type</th>
+        <th>House #</th>
+        <th>Rent</th>
+        <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th>
+        <th>May</th><th>Jun</th><th>Jul</th><th>Aug</th>
+        <th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+        <th>Water Total</th>
+        <th>Electricity Total</th>
+        <th>Garbage Total</th>
+        <th>Internet Total</th>
+        <th>Year Total</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="tenantList"></tbody>
+    <tfoot>
+      <tr class="totalRow">
+        <td colspan="16">Grand Total</td>
+        <td id="grandWater">0</td>
+        <td id="grandElec">0</td>
+        <td id="grandGarbage">0</td>
+        <td id="grandInternet">0</td>
+        <td id="grandTotal">0</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Summary Table -->
+  <h2>Summary Report</h2>
+  <table id="summaryTable">
+    <thead>
+      <tr>
+        <th>Tenant</th>
+        <th>House Type</th>
+        <th>House #</th>
+        <th>Rent (Monthly)</th>
+        <th>Water Total</th>
+        <th>Electricity Total</th>
+        <th>Garbage Total</th>
+        <th>Internet Total</th>
+        <th>Year Total</th>
+      </tr>
+    </thead>
+    <tbody id="summaryList"></tbody>
+    <tfoot>
+      <tr class="totalRow">
+        <td colspan="4">Grand Totals</td>
+        <td id="sumWater">0</td>
+        <td id="sumElec">0</td>
+        <td id="sumGarbage">0</td>
+        <td id="sumInternet">0</td>
+        <td id="sumTotal">0</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <script>
+    const rentValues = {
+      "Bedsitter": 6500,
+      "Studio": 18000,
+      "1 Bedroom": 10000,
+      "2 Bedroom": 15000,
+      "3 Bedroom": 21000
+    };
+
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    let tenants = [
+      { name: "Joel", houseType: "1 Bedroom", number: "A1", utilities: {} },
+      { name: "Dayan", houseType: "3 Bedroom", number: "A2", utilities: {} },
+      { name: "Suzan", houseType: "2 Bedroom", number: "B1", utilities: {} },
+      { name: "Snaida", houseType: "Bedsitter", number: "B2", utilities: {} },
+      { name: "Alice", houseType: "Studio", number: "C1", utilities: {} },
+      { name: "Evelyne", houseType: "1 Bedroom", number: "C2", utilities: {} },
+      { name: "Mike", houseType: "2 Bedroom", number: "D1", utilities: {} },
+      { name: "Ben", houseType: "3 Bedroom", number: "D2", utilities: {} },
+      { name: "Peter", houseType: "Bedsitter", number: "E1", utilities: {} },
+      { name: "Sarah", houseType: "Studio", number: "E2", utilities: {} },
+      { name: "John", houseType: "1 Bedroom", number: "E3", utilities: {} },
+      { name: "Mary", houseType: "2 Bedroom", number: "E4", utilities: {} }
+    ];
+
+    function renderTable() {
+      const tbody = document.getElementById("tenantList");
+      const summaryBody = document.getElementById("summaryList");
+      tbody.innerHTML = "";
+      summaryBody.innerHTML = "";
+
+      let grandWater = 0, grandElec = 0, grandGarbage = 0, grandInternet = 0, grandTotal = 0;
+
+      tenants.forEach((t, index) => {
+        let rent = rentValues[t.houseType] || 0;
+        let yearly = 0, waterTotal = 0, elecTotal = 0, garbageTotal = 0, internetTotal = 0;
+
+        let row = `<tr>
+          <td>${t.name}</td>
+          <td>${t.houseType}</td>
+          <td>${t.number||"-"}</td>
+          <td>${rent}</td>`;
+
+        months.forEach((m) => {
+          let util = t.utilities[m] || {water:0,electricity:0,garbage:0,internet:0};
+          let monthTotal = rent + util.water + util.electricity + util.garbage + util.internet;
+
+          waterTotal += util.water;
+          elecTotal += util.electricity;
+          garbageTotal += util.garbage;
+          internetTotal += util.internet;
+          yearly += monthTotal;
+
+          row += `<td>
+            <div class="monthBox">
+              <div><label>W:</label><input type="number" value="${util.water}" onchange="updateUtility(${index}, '${m}', 'water', this.value)"></div>
+              <div><label>E:</label><input type="number" value="${util.electricity}" onchange="updateUtility(${index}, '${m}', 'electricity', this.value)"></div>
+              <div><label>G:</label><input type="number" value="${util.garbage}" onchange="updateUtility(${index}, '${m}', 'garbage', this.value)"></div>
+              <div><label>I:</label><input type="number" value="${util.internet}" onchange="updateUtility(${index}, '${m}', 'internet', this.value)"></div>
+            </div>
+            <small>Subtotal: ${monthTotal}</small>
+          </td>`;
+        });
+
+        grandWater += waterTotal;
+        grandElec += elecTotal;
+        grandGarbage += garbageTotal;
+        grandInternet += internetTotal;
+        grandTotal += yearly;
+
+        row += `<td><b>${waterTotal}</b></td>
+                <td><b>${elecTotal}</b></td>
+                <td><b>${garbageTotal}</b></td>
+                <td><b>${internetTotal}</b></td>
+                <td><b>${yearly}</b></td>
+                <td><button class="removeBtn" onclick="removeTenant(${index})">Remove</button></td>
+        </tr>`;
+
+        tbody.innerHTML += row;
+
+        // Add to Summary Table
+        summaryBody.innerHTML += `<tr>
+          <td>${t.name}</td>
+          <td>${t.houseType}</td>
+          <td>${t.number||"-"}</td>
+          <td>${rent}</td>
+          <td>${waterTotal}</td>
+          <td>${elecTotal}</td>
+          <td>${garbageTotal}</td>
+          <td>${internetTotal}</td>
+          <td>${yearly}</td>
+        </tr>`;
+      });
+
+      document.getElementById("grandWater").innerText = grandWater;
+      document.getElementById("grandElec").innerText = grandElec;
+      document.getElementById("grandGarbage").innerText = grandGarbage;
+      document.getElementById("grandInternet").innerText = grandInternet;
+      document.getElementById("grandTotal").innerText = grandTotal;
+
+      document.getElementById("sumWater").innerText = grandWater;
+      document.getElementById("sumElec").innerText = grandElec;
+      document.getElementById("sumGarbage").innerText = grandGarbage;
+      document.getElementById("sumInternet").innerText = grandInternet;
+      document.getElementById("sumTotal").innerText = grandTotal;
+    }
+
+    function updateUtility(index, month, type, value) {
+      tenants[index].utilities[month] = tenants[index].utilities[month] || {water:0,electricity:0,garbage:0,internet:0};
+      tenants[index].utilities[month][type] = parseInt(value)||0;
+      renderTable();
+    }
+
+    function addTenant() {
+      let name = document.getElementById("newName").value.trim();
+      let houseType = document.getElementById("newHouse").value;
+      let number = document.getElementById("newNumber").value;
+      if (!name) { alert("Enter tenant name"); return; }
+      tenants.push({ name, houseType, number, utilities:{} });
+      document.getElementById("newName").value="";
+      document.getElementById("newNumber").value="";
+      renderTable();
+    }
+
+    function removeTenant(index) {
+      tenants.splice(index,1);
+      renderTable();
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
